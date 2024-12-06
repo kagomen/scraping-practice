@@ -1,18 +1,18 @@
 import { chromium } from "@playwright/test";
 import * as fs from "fs";
 import env from "dotenv";
+import { init } from "./google-spread-sheet/utils.js";
 
-export async function getData() {
+export async function getAllData() {
   env.config();
   const array = [];
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch(); // 実行中の処理を見たい場合は`launch({headless: false})`に設定
   const page = await browser.newPage();
   await page.goto(process.env.URL + "/card-search/");
 
-  async function getData(pageNum) {
+  async function getPageData(pageNum) {
     console.log(`${pageNum}ページのデータを取得します！`);
-    await page.waitForLoadState("networkidle");
     const datas = await page.locator(".SearchResultList-box img").all(); // 取得したい要素にidやclassがない場合はxpathを使う
 
     for (const data of datas) {
@@ -23,16 +23,14 @@ export async function getData() {
   }
 
   let currentPage = 1;
-  await getData(1);
 
-  while (true) {
+  while (currentPage < 4) {
+    await getPageData(currentPage);
     const nextBtn = page.locator(".nextButton");
-    if (currentPage > 2) {
-      break;
-    }
     await nextBtn.click();
+    await page.waitForTimeout(1000);
+    // waitForLoadStatusやauto-waitingが効かない
     currentPage++;
-    await getData(currentPage);
   }
 
   await browser.close();
@@ -40,4 +38,11 @@ export async function getData() {
   // fs.writeFileSync(process.env.OUTPUT_FILE, JSON.stringify(array));
 
   return array;
+}
+
+export async function addDataToSpreadsheet() {
+  const data = await getAllData();
+  const doc = await init();
+  const sheet = doc.sheetsByTitle["pokemon"];
+  await sheet.addRows(data);
 }
