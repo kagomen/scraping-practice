@@ -13,6 +13,7 @@ export async function getAllData() {
 
   async function getPageData(pageNum) {
     console.log(`${pageNum}ページのデータを取得します！`);
+
     const datas = await page.locator(".SearchResultList-box img").all(); // 取得したい要素にidやclassがない場合はxpathを使う
 
     for (const data of datas) {
@@ -28,8 +29,7 @@ export async function getAllData() {
     await getPageData(currentPage);
     const nextBtn = page.locator(".nextButton");
     await nextBtn.click();
-    await page.waitForTimeout(1000);
-    // waitForLoadStatusやauto-waitingが効かない
+    await page.waitForLoadState("networkidle");
     currentPage++;
   }
 
